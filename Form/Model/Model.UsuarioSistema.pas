@@ -54,6 +54,35 @@ type
     property idassociado : integer read Fidassociado  write Fidassociado;
   end;
 
+
+type
+  TComissaoEleitoralEnvioDTO = class
+  private
+    FIdComissao: Integer;
+    FIdEleicao: Integer;
+    FNome: string;
+    FCPF: string;
+    FTelefone: string;
+    FEmail: string;
+    FCargo: string;
+    FAtivo: string;
+    FSenha: string;
+    FGuidEmpresa: string;
+    FAPIKey: string;
+  public
+    property IdComissao: Integer read FIdComissao write FIdComissao;
+    property IdEleicao: Integer read FIdEleicao write FIdEleicao;
+    property Nome: string read FNome write FNome;
+    property CPF: string read FCPF write FCPF;
+    property Telefone: string read FTelefone write FTelefone;
+    property Email: string read FEmail write FEmail;
+    property Cargo: string read FCargo write FCargo;
+    property Ativo: string read FAtivo write FAtivo;
+    property Senha: string read FSenha write FSenha;
+    property GuidEmpresa: string read FGuidEmpresa write FGuidEmpresa;
+    property APIKey: string read FAPIKey write FAPIKey;
+  end;
+
 implementation
 
 end.
