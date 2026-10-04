@@ -286,6 +286,12 @@ begin
     if not Assigned(DTO) then Exit(True);
 
     try
+      if DTO.IdEleicao <= 0 then
+      begin
+        AErro := 'Eleição da comissão não informada.';
+        Exit;
+      end;
+
       if Trim(DTO.Nome).IsEmpty then
       begin
         AErro := 'Nome do usuário/comissão não informado.';
