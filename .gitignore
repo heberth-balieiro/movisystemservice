@@ -1,0 +1,40 @@
+# Compilacao Delphi
+Bin/
+DCU/
+Win32/
+Win64/
+Debug/
+Release/
+FinalExe/
+
+# Historico e recuperacao do Delphi
+__history/
+__recovery/
+
+# Arquivos gerados pelo Delphi
+*.dcu
+*.exe
+*.dll
+*.bpl
+*.dcp
+*.map
+*.rsm
+*.tds
+*.local
+*.identcache
+*.stat
+*.otares
+*.dres
+
+# Temporarios e backups
+*.~*
+*.bak
+*.tmp
+*.log
+
+# IDE
+*.dproj.local
+
+# Sistema
+Thumbs.db
+.DS_Store

@@ -1,0 +1,3 @@
+Serviço de envio de mensagem de whatsapp ASMUV.
+
+17/07/2025 - criado uma função para subir a instancia do Celular quando cair.
