@@ -13,7 +13,7 @@ type
   public
     class function BuscarParaSincronizacao(AConn: TUniConnection; const AIDRegistro: Integer): TUsuarioSistemaEnvioDTO; static;
     class function BuscarParaSincronizacaoAPTOS(AConn: TUniConnection; const AIDRegistro: Integer): TUsuarioAPTOSEnvioDTO; static;
-    class function BuscarParaSincronizacaoComissao(AConn: TUniConnection; const AIDRegistro: Integer):TUsuarioSistemaEnvioDTO; static;
+    class function BuscarParaSincronizacaoComissao(AConn: TUniConnection; const AIDRegistro: Integer):TComissaoEleitoralEnvioDTO; static;
 
     class procedure AtualizarSincronizacao(AConn: TUniConnection; const AIDRegistro: Integer); static;
     class procedure AtualizarSincronizacaoAPTOS(AConn: TUniConnection; const AIDRegistro,AIDAPI: Integer); static;
@@ -146,7 +146,7 @@ end;
 
 //comisaso
 class function TDaoUsuarioSistema.BuscarParaSincronizacaoComissao(
-  AConn: TUniConnection; const AIDRegistro: Integer): TUsuarioSistemaEnvioDTO;
+  AConn: TUniConnection; const AIDRegistro: Integer): TComissaoEleitoralEnvioDTO;
 const
   SQL =
     'SELECT ec.id_comissao, ec.id_eleicao, ec.nome, ec.cpf, ec.telefone, '+
@@ -172,15 +172,16 @@ begin
     ASenha             := Copy(Qry.FieldByName('cpf').AsString,1,5);
     ASenha             := TConeSul.Crypt('C',ASenha);
 
-    Result             := TUsuarioSistemaEnvioDTO.Create;
-    Result.IdUsuario   := Qry.FieldByName('id_comissao').AsInteger;
+    Result             := TComissaoEleitoralEnvioDTO.Create;
+    Result.IdComissao  := Qry.FieldByName('id_comissao').AsInteger;
+    Result.IdEleicao   := Qry.FieldByName('id_eleicao').AsInteger;
     Result.Nome        := Trim(Qry.FieldByName('nome').AsString);
-    Result.Login       := Trim(Qry.FieldByName('cpf').AsString);
-    Result.Senha       := ASenha;
-    Result.Ativo       := Trim(Qry.FieldByName('ativo').AsString);
+    Result.CPF         := Trim(Qry.FieldByName('cpf').AsString);
+    Result.Telefone    := Trim(Qry.FieldByName('telefone').AsString);
     Result.Email       := Trim(Qry.FieldByName('email').AsString);
-
-    Result.Excluido    := 0;
+    Result.Cargo       := Trim(Qry.FieldByName('cargo').AsString);
+    Result.Ativo       := Trim(Qry.FieldByName('ativo').AsString);
+    Result.Senha       := ASenha;
     Result.GuidEmpresa := Trim(Qry.FieldByName('guid').AsString);
     Result.APIKey      := Trim(Qry.FieldByName('token_api').AsString);
   finally
