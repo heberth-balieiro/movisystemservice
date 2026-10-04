@@ -12,6 +12,7 @@ type
   private
     class function CriarJSON(const ADTO: TObject): string; static;
     class function CriarJSONAPTOS(const ADTO: TObject): string; static;
+    class function CriarJSONComissao(const ADTO: TObject): string; static;
   public
     class function Sincronizar(AConn: TUniConnection; const AIDRegistro: Integer; out AErro: string): Boolean; static;
     class function SincronizarAptos(AConn: TUniConnection; const AIDRegistro: Integer; out AErro: string): Boolean; static;
@@ -82,6 +83,35 @@ begin
   end;
 end;
 
+
+class function TUsuarioSistemaService.CriarJSONComissao(const ADTO: TObject): string;
+var
+  D: TComissaoEleitoralEnvioDTO;
+  J: TJSONObject;
+  ASenha, ASenhaNova: string;
+begin
+  D := TComissaoEleitoralEnvioDTO(ADTO);
+  J := TJSONObject.Create;
+  try
+    ASenha := TConeSul.Crypt('D',D.Senha);
+    ASenhaNova := GerarSenhaAPI(ASenha);
+
+    J.AddPair('id_comissao_int', TJSONNumber.Create(D.IdComissao));
+    J.AddPair('id_eleicao_int', TJSONNumber.Create(D.IdEleicao));
+    J.AddPair('nome', D.Nome);
+    J.AddPair('cpf', D.CPF);
+    J.AddPair('telefone', D.Telefone);
+    J.AddPair('email', D.Email);
+    J.AddPair('cargo', D.Cargo);
+    J.AddPair('ativo', D.Ativo);
+    J.AddPair('senha_hash', ASenhaNova);
+
+    Result := J.ToJSON;
+  finally
+    J.Free;
+  end;
+end;
+
 class function TUsuarioSistemaService.Sincronizar(AConn: TUniConnection; const AIDRegistro: Integer; out AErro: string): Boolean;
 var
   DTO: TUsuarioSistemaEnvioDTO;
@@ -96,22 +126,22 @@ begin
     if not Assigned(DTO) then Exit(True);
 
     try
-      if Trim(DTO.Nome).IsEmpty then begin AErro := 'Nome do usu·rio n„o informado.'; Exit; end;
-      if Trim(DTO.Login).IsEmpty then begin AErro := 'Login do usu·rio n„o informado.'; Exit; end;
-      if Trim(DTO.Senha).IsEmpty then begin AErro := 'Senha do usu·rio n„o informada.'; Exit; end;
+      if Trim(DTO.Nome).IsEmpty then begin AErro := 'Nome do usu√°rio n√£o informado.'; Exit; end;
+      if Trim(DTO.Login).IsEmpty then begin AErro := 'Login do usu√°rio n√£o informado.'; Exit; end;
+      if Trim(DTO.Senha).IsEmpty then begin AErro := 'Senha do usu√°rio n√£o informada.'; Exit; end;
 
       //if DTO.Excluido <> 0 then DTO.Ativo := 'N';
 
       if not TDaoConfig.BuscarURLAppEleicao(AConn,URL,UsuarioAPI,SenhaAPI) then
       begin
-        AErro := 'ConfiguraÁ„o da API de eleiÁ„o n„o encontrada.';
+        AErro := 'Configura√ß√£o da API de elei√ß√£o n√£o encontrada.';
         Exit;
       end;
 
       Config := TEleicaoAPIConfig.Criar(URL,UsuarioAPI,SenhaAPI);
 
-      if Trim(DTO.GuidEmpresa).IsEmpty then begin AErro := 'UUID da empresa n„o informado.'; Exit; end;
-      if Trim(DTO.APIKey).IsEmpty then begin AErro := 'API Key da empresa n„o informada.'; Exit; end;
+      if Trim(DTO.GuidEmpresa).IsEmpty then begin AErro := 'UUID da empresa n√£o informado.'; Exit; end;
+      if Trim(DTO.APIKey).IsEmpty then begin AErro := 'API Key da empresa n√£o informada.'; Exit; end;
 
       JSON := CriarJSON(DTO);
 
@@ -161,25 +191,25 @@ begin
     try
       if Trim(DTO.Nome).IsEmpty then
       begin
-        AErro := 'Nome do associado n„o informado.';
+        AErro := 'Nome do associado n√£o informado.';
         Exit;
       end;
 
       if Trim(DTO.Login).IsEmpty then
       begin
-        AErro := 'CPF do associado n„o informado.';
+        AErro := 'CPF do associado n√£o informado.';
         Exit;
       end;
 
       if Trim(DTO.Senha).IsEmpty then
       begin
-        AErro := 'Matricula do associado n„o informada.';
+        AErro := 'Matricula do associado n√£o informada.';
         Exit;
       end;
 
       if not TDaoConfig.BuscarURLAppEleicao(AConn,URL,UsuarioAPI,SenhaAPI) then
       begin
-        AErro := 'ConfiguraÁ„o da API de eleiÁ„o n„o encontrada.';
+        AErro := 'Configura√ß√£o da API de elei√ß√£o n√£o encontrada.';
         Exit;
       end;
 
@@ -187,13 +217,13 @@ begin
 
       if Trim(DTO.GuidEmpresa).IsEmpty then
       begin
-        AErro := 'UUID da empresa n„o informado.';
+        AErro := 'UUID da empresa n√£o informado.';
         Exit;
       end;
 
       if Trim(DTO.APIKey).IsEmpty then
       begin
-        AErro := 'API Key da empresa n„o informada.';
+        AErro := 'API Key da empresa n√£o informada.';
         Exit;
       end;
 
@@ -207,13 +237,13 @@ begin
       JSONValue:=TJSONObject.ParseJSONValue(Resposta);
       try
         if not Assigned(JSONValue) then
-          raise Exception.Create('Resposta inv·lida da API.');
+          raise Exception.Create('Resposta inv√°lida da API.');
         JSONResp:=JSONValue as TJSONObject;
         Dados:=JSONResp.GetValue<TJSONObject>('dados');
         if not Assigned(Dados) then
-          raise Exception.Create('Objeto dados n„o retornado pela API.');
+          raise Exception.Create('Objeto dados n√£o retornado pela API.');
         IDUsuarioAPI    :=Dados.GetValue<Integer>('id');
-        // aqui vocÍ grava o retorno
+        // aqui voc√™ grava o retorno
         TDaoUsuarioSistema.AtualizarSincronizacaoAPTOS(AConn, AIDRegistro, IDUsuarioAPI);
         //TDaoEleicaoEleitor.AtualizarIDUsuarioAPI(AConn,DTO.IdEleitor,IDUsuarioAPI);
         Result:=True;
@@ -243,7 +273,7 @@ end;
 class function TUsuarioSistemaService.SincronizarComissao(AConn: TUniConnection;
                           const AIDRegistro: Integer; out AErro: string): Boolean;
 var
-  DTO: TUsuarioSistemaEnvioDTO;
+  DTO: TComissaoEleitoralEnvioDTO;
   URL, UsuarioAPI, SenhaAPI, JSON, Resposta: string;
   Config: TEleicaoAPIConfig;
 begin
@@ -258,25 +288,31 @@ begin
     try
       if Trim(DTO.Nome).IsEmpty then
       begin
-        AErro := 'Nome do usu·rio/comiss„o n„o informado.';
+        AErro := 'Nome do usu√°rio/comiss√£o n√£o informado.';
         Exit;
       end;
 
-      if Trim(DTO.Login).IsEmpty then
+      if Trim(DTO.CPF).IsEmpty then
       begin
-        AErro := 'Login do usu·rio/comiss„o n„o informado.';
+        AErro := 'CPF do usu√°rio/comiss√£o n√£o informado.';
+        Exit;
+      end;
+
+      if Trim(DTO.Email).IsEmpty then
+      begin
+        AErro := 'E-mail do usu√°rio/comiss√£o n√£o informado.';
         Exit;
       end;
 
       if Trim(DTO.Senha).IsEmpty then
       begin
-        AErro := 'Senha do usu·rio/comiss„o n„o informada.';
+        AErro := 'Senha do usu√°rio/comiss√£o n√£o informada.';
         Exit;
       end;
 
       if not TDaoConfig.BuscarURLAppEleicao(AConn,URL,UsuarioAPI,SenhaAPI) then
       begin
-        AErro := 'ConfiguraÁ„o da API de eleiÁ„o n„o encontrada.';
+        AErro := 'Configura√ß√£o da API de elei√ß√£o n√£o encontrada.';
         Exit;
       end;
 
@@ -284,23 +320,23 @@ begin
 
       if Trim(DTO.GuidEmpresa).IsEmpty then
       begin
-        AErro := 'UUID da empresa n„o informado.';
+        AErro := 'UUID da empresa n√£o informado.';
         Exit;
       end;
 
       if Trim(DTO.APIKey).IsEmpty then
       begin
-        AErro := 'API Key da empresa n„o informada.';
+        AErro := 'API Key da empresa n√£o informada.';
         Exit;
       end;
 
-      JSON  := CriarJSON(DTO);
+      JSON  := CriarJSONComissao(DTO);
 
       if not TEleicaoAPIClient.PostEmpresa(
         Config,
         DTO.GuidEmpresa,
         DTO.APIKey,
-        '/v1/integracao/usuario/sistema',
+        '/v1/integracao/eleicao/comissao',
         JSON,
         Resposta,
         AErro
