@@ -95,7 +95,7 @@ var
   Resposta, Erro: string;
 begin
   if not TDaoConfig.BuscarURLAppEleicao(AConn,URL,Usuario,Senha) then
-    raise Exception.Create('ConfiguraÁ„o da API da eleiÁ„o n„o encontrada.');
+    raise Exception.Create('Configura√ß√£o da API da elei√ß√£o n√£o encontrada.');
 
   Config    := TEleicaoAPIConfig.Criar(URL,Usuario,Senha);
   Resposta  := '';
@@ -103,10 +103,6 @@ begin
 
   if not TEleicaoAPIClient.GetEmpresa(Config,AUUID,AAPIKey,'/v1/integracao/easyone/eleicoes/status','', Resposta,Erro) then
     raise Exception.Create(Erro);
-
-  //log
-  TFile.WriteAllText('D:\Projeto2024\ProjetoAsmuv\EasyBot\Bin\RetornoEleicaoAPI.txt',
-  Resposta,TEncoding.UTF8);
 
   ProcessarRetorno(AConn,AIDEmpresa,Resposta);
 end;
@@ -123,7 +119,7 @@ begin
 
   try
     if not Assigned(Json) then
-      raise Exception.Create('Retorno inv·lido da API.');
+      raise Exception.Create('Retorno inv√°lido da API.');
 
     Dados := Json.GetValue<TJSONArray>('dados');
 
@@ -166,6 +162,7 @@ begin
     MatchText(
       UpperCase(Trim(ASituacao)),
       [
+        'AGENDADA',
         'ABERTA',
         'ENCERRADA',
         'EM_APURACAO',
