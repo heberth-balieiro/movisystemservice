@@ -145,7 +145,7 @@ begin
   FStopEvent.ResetEvent;
   FThread := TEleicaoWorkerThread.Create(Self);
   FThread.Start;
-  LogArquivo('Serviço de sincronizaão da eleição iniciado.');
+  LogArquivo('ServiÃ§o de sincronizaÃ£o da eleiÃ§Ã£o iniciado.');
 end;
 
 procedure TEleicaoSincronizacaoService.Stop;
@@ -155,7 +155,7 @@ begin
   FThread.Terminate;
   FThread.WaitFor;
   FreeAndNil(FThread);
-  LogArquivo('Serviço de sincronizaão da eleição finalizado.');
+  LogArquivo('ServiÃ§o de sincronizaÃ£o da eleiÃ§Ã£o finalizado.');
 end;
 
 function TEleicaoSincronizacaoService.Executando: Boolean;
@@ -182,7 +182,7 @@ begin
       ProcessarLote;
     except
       on E: Exception do
-        LogArquivo('Erro no processamento da eleição: ' + E.Message);
+        LogArquivo('Erro no processamento da eleiÃ§Ã£o: ' + E.Message);
     end;
 
     if not Aguardar(FConfig.IntervaloMs) then Break;
@@ -225,7 +225,7 @@ begin
 
     if not ProcessarEmpresasPendentes(Conn) then
     begin
-      LogArquivo('Sincronização eleitoral aguardando o envio da empresa.');
+      LogArquivo('SincronizaÃ§Ã£o eleitoral aguardando o envio da empresa.');
       Exit;
     end;
 
@@ -291,7 +291,8 @@ begin
     Qry.SQL.Text :=
       'SELECT id_sincronizar, cod_tabela, status, id_registro ' +
       'FROM sincronizar WHERE status = ''S'' AND cod_tabela IN (' +
-      C_CODIGOS_ELEICAO + ') ORDER BY id_sincronizar LIMIT ' +
+      C_CODIGOS_ELEICAO + ') ' +
+      'ORDER BY FIELD(cod_tabela,4,15,100,101,102,103,104,105,106,107), id_sincronizar LIMIT ' +
       IntToStr(FConfig.TamanhoLote);
     Qry.Open;
 
@@ -322,30 +323,30 @@ begin
   Processo := NomeProcesso(CodigoTabela);
 
   try
-    LogArquivo(Format('Sincronização %d iniciada. código: %d - %s. Registro: %d.',
+    LogArquivo(Format('SincronizaÃ§Ã£o %d iniciada. cÃ³digo: %d - %s. Registro: %d.',
       [IDSincronizar, CodigoTabela, Processo, IDRegistro]));
 
     if CodigoTabela = 22 then
     begin
-      LogArquivo(Format('Sincronização %d aguardando implementação do controller: %s.',
+      LogArquivo(Format('SincronizaÃ§Ã£o %d aguardando implementaÃ§Ã£o do controller: %s.',
         [IDSincronizar, Processo]));
       Exit;
     end;
 
     if not ExecutarController(AConn, CodigoTabela, IDRegistro) then
     begin
-      LogArquivo(Format('Sincronização %d não concluida e continuara com status S: %s.',
+      LogArquivo(Format('SincronizaÃ§Ã£o %d nÃ£o concluida e continuara com status S: %s.',
         [IDSincronizar, Processo]));
       Exit;
     end;
 
     MarcarConcluido(AConn, IDSincronizar);
-    LogArquivo(Format('Sincronização %d concluida: %s.',
+    LogArquivo(Format('SincronizaÃ§Ã£o %d concluida: %s.',
       [IDSincronizar, Processo]));
     Result := True;
   except
     on E: Exception do
-      LogArquivo(Format('Sincronização %d com erro em %s: %s',
+      LogArquivo(Format('SincronizaÃ§Ã£o %d com erro em %s: %s',
         [IDSincronizar, Processo, E.Message]));
   end;
 end;
@@ -383,17 +384,17 @@ begin
   case ACodigoTabela of
     19  : Result  := 'Empresa Sincronizado';
     4   : Result  := 'Associado Sincronizado';
-    15  : Result  := 'Úsuário Sistema Sincronizado';
+    15  : Result  := 'ÃšsuÃ¡rio Sistema Sincronizado';
     100 : Result  := 'Eleicao Sincronizado';
-    101 : Result  := 'Eleição Configuração Sincronizado';
+    101 : Result  := 'EleiÃ§Ã£o ConfiguraÃ§Ã£o Sincronizado';
     102 : Result  := 'Eleicao Chapa Sincronizado';
-    103 : Result  := 'Eleição Chapa Membros Sincronizado';
-    104 : Result  := 'Eleição Usuário APTO Sincronizado';
-    105 : Result  := 'Eleição Comissão Sincronizado';
-    106 : Result  := 'Eleição Questão Sincronizado';
-    107 : Result  := 'Eleição Questão Opção Sincronizado';
+    103 : Result  := 'EleiÃ§Ã£o Chapa Membros Sincronizado';
+    104 : Result  := 'EleiÃ§Ã£o UsuÃ¡rio APTO Sincronizado';
+    105 : Result  := 'EleiÃ§Ã£o ComissÃ£o Sincronizado';
+    106 : Result  := 'EleiÃ§Ã£o QuestÃ£o Sincronizado';
+    107 : Result  := 'EleiÃ§Ã£o QuestÃ£o OpÃ§Ã£o Sincronizado';
   else
-    Result := 'Código não reconhecido';
+    Result := 'CÃ³digo nÃ£o reconhecido';
   end;
 end;
 
@@ -411,7 +412,7 @@ begin
     Qry.ParamByName('id').AsLargeInt := AIDSincronizar;
     Qry.ExecSQL;
     if Qry.RowsAffected <> 1 then
-      raise Exception.CreateFmt('Não foi possivel concluir a sincronização %d.',
+      raise Exception.CreateFmt('NÃ£o foi possivel concluir a sincronizaÃ§Ã£o %d.',
         [AIDSincronizar]);
   finally
     Qry.Free;
