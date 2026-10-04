@@ -71,13 +71,13 @@ begin
     try
       if DTO.id_eleicao <= 0 then
       begin
-        AErro := 'Eleição não informada.';
+        AErro := 'EleiÃ§Ã£o nÃ£o informada.';
         Exit;
       end;
 
       if Trim(DTO.titulo).IsEmpty then
       begin
-        AErro := 'Título da questão não informado.';
+        AErro := 'TÃ­tulo da questÃ£o nÃ£o informado.';
         Exit;
       end;
 
@@ -86,7 +86,7 @@ begin
 
       if not TDaoConfig.BuscarURLAppEleicao(AConn,URL,Usuario,Senha) then
       begin
-        AErro := 'Configuração da API de eleição não encontrada.';
+        AErro := 'ConfiguraÃ§Ã£o da API de eleiÃ§Ã£o nÃ£o encontrada.';
         Exit;
       end;
 
@@ -94,13 +94,13 @@ begin
 
       if Trim(DTO.GuidEmpresa).IsEmpty then
       begin
-        AErro := 'UUID da empresa não informado.';
+        AErro := 'UUID da empresa nÃ£o informado.';
         Exit;
       end;
 
       if Trim(DTO.APIKey).IsEmpty then
       begin
-        AErro := 'API Key da empresa não informada.';
+        AErro := 'API Key da empresa nÃ£o informada.';
         Exit;
       end;
 
@@ -175,13 +175,13 @@ begin
     try
       if DTO.id_eleicao <= 0 then
       begin
-        AErro := 'Eleição não informada.';
+        AErro := 'EleiÃ§Ã£o nÃ£o informada.';
         Exit;
       end;
 
       if Trim(DTO.descricao).IsEmpty then
       begin
-        AErro := 'Descrição da questão não informado.';
+        AErro := 'DescriÃ§Ã£o da questÃ£o nÃ£o informado.';
         Exit;
       end;
 
@@ -190,7 +190,7 @@ begin
 
       if not TDaoConfig.BuscarURLAppEleicao(AConn,URL,Usuario,Senha) then
       begin
-        AErro := 'Configuração da API de eleição não encontrada.';
+        AErro := 'ConfiguraÃ§Ã£o da API de eleiÃ§Ã£o nÃ£o encontrada.';
         Exit;
       end;
 
@@ -198,17 +198,17 @@ begin
 
       if Trim(DTO.GuidEmpresa).IsEmpty then
       begin
-        AErro := 'UUID da empresa não informado.';
+        AErro := 'UUID da empresa nÃ£o informado.';
         Exit;
       end;
 
       if Trim(DTO.APIKey).IsEmpty then
       begin
-        AErro := 'API Key da empresa não informada.';
+        AErro := 'API Key da empresa nÃ£o informada.';
         Exit;
       end;
 
-      JSON := CriarJSONQuestao(DTO);
+      JSON := CriarJSONQuestaoOpcao(DTO);
 
       if not TEleicaoAPIClient.PostEmpresa(
         Config,
