@@ -56,6 +56,7 @@ uses
   uEleicaoRetornoService in 'Form\eleicao\uEleicaoRetornoService.pas',
   Controllers.EleicaoRetorno in 'Form\eleicao\Controllers.EleicaoRetorno.pas',
   Service.EleicaoRetorno in 'Form\eleicao\Service.EleicaoRetorno.pas',
+  Service.AtualizacaoCadastral in 'Form\eleicao\Service.AtualizacaoCadastral.pas',
   Controllers.EleicaoQuestao in 'Form\Controllers\Controllers.EleicaoQuestao.pas',
   Service.EleicaoQuestao in 'Form\Service\Service.EleicaoQuestao.pas',
   Model.EleicaoQuestao in 'Form\Model\Model.EleicaoQuestao.pas',
@@ -64,9 +65,9 @@ uses
 {$R *.RES}
 
 begin
-  //Serviço sincronizar Carteira
-  //serviço sincronizar Eleição
-  //Serviço sincronizar Mensagem
+  //ServiÃ§o sincronizar Carteira
+  //serviÃ§o sincronizar EleiÃ§Ã£o
+  //ServiÃ§o sincronizar Mensagem
 
   // Windows 2003 Server requires StartServiceCtrlDispatcher to be
   // called before CoRegisterClassObject, which can be called indirectly
