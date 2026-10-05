@@ -47,6 +47,9 @@ type
 
 implementation
 
+uses
+  Service.AtualizacaoCadastral;
+
 type
   TEleicaoRetornoWorkerThread = class(TThread)
   private
@@ -135,7 +138,7 @@ begin
   FThread := TEleicaoRetornoWorkerThread.Create(Self);
   FThread.Start;
 
-  LogArquivo('ServiÁo de retorno da eleiÁ„o iniciado.');
+  LogArquivo('Servi√ßo de retorno da elei√ß√£o iniciado.');
 end;
 
 procedure TEleicaoRetornoService.Stop;
@@ -149,7 +152,7 @@ begin
 
   FreeAndNil(FThread);
 
-  LogArquivo('ServiÁo de retorno da eleiÁ„o finalizado.');
+  LogArquivo('Servi√ßo de retorno da elei√ß√£o finalizado.');
 end;
 
 function TEleicaoRetornoService.Executando: Boolean;
@@ -208,12 +211,10 @@ begin
   while not Parando do
   begin
     try
-
       ProcessarRetorno;
-
     except
       on E: Exception do
-        LogArquivo('Erro no retorno da eleiÁ„o: ' + E.Message);
+        LogArquivo('Erro no retorno da elei√ß√£o: ' + E.Message);
     end;
 
     if not Aguardar(FConfig.IntervaloMs) then
@@ -233,17 +234,30 @@ begin
 
     Erro := '';
 
-    LogArquivo('Consultando alteraÁıes da eleiÁ„o na API.');
+    LogArquivo('Consultando altera√ß√µes da elei√ß√£o na API.');
 
     if not TControllersEleicaoRetorno.Sincronizar(Conn, Erro ) then
     begin
       if Trim(Erro) <> '' then
-        LogArquivo('Retorno da eleiÁ„o n„o concluÌdo: ' + Erro);
+        LogArquivo('Retorno da elei√ß√£o n√£o conclu√≠do: ' + Erro);
 
       Exit;
     end;
 
-    LogArquivo('Retorno da eleiÁ„o concluÌdo.');
+    LogArquivo('Retorno da elei√ß√£o conclu√≠do.');
+
+    // Aproveita o mesmo worker de retorno para buscar solicita√ß√µes p√∫blicas
+    // de atualiza√ß√£o cadastral. Nesta fase o EasyBot apenas grava uma c√≥pia
+    // local PENDENTE; nenhum cadastro de associado √© alterado aqui.
+    Erro := '';
+    if not TAtualizacaoCadastralIntegracaoService.Sincronizar(Conn, Erro) then
+    begin
+      if Trim(Erro) <> '' then
+        LogArquivo('Atualiza√ß√£o cadastral n√£o conclu√≠da: ' + Erro);
+      Exit;
+    end;
+
+    LogArquivo('Pend√™ncias de atualiza√ß√£o cadastral sincronizadas.');
 
   finally
     Conn.Free;
@@ -291,7 +305,7 @@ begin
       end;
 
     except
-      // n„o deixa erro de log derrubar o worker
+      // n√£o deixa erro de log derrubar o worker
     end;
 
   finally
