@@ -13,7 +13,6 @@ uses
 type
   TAtualizacaoCadastralIntegracaoService = class
   private
-    class procedure GarantirTabela(AConn: TUniConnection); static;
     class procedure ProcessarEmpresa(AConn: TUniConnection;
       const AIDEmpresa: Integer; const AUUID, AAPIKey: string); static;
     class procedure ProcessarResposta(AConn: TUniConnection;
@@ -26,38 +25,6 @@ type
 
 implementation
 
-class procedure TAtualizacaoCadastralIntegracaoService.GarantirTabela(AConn: TUniConnection);
-var
-  Qry: TUniQuery;
-begin
-  Qry := TUniQuery.Create(nil);
-  try
-    Qry.Connection := AConn;
-    Qry.SQL.Text :=
-      'CREATE TABLE IF NOT EXISTS integracao_atualizacao_cadastral (' +
-      ' id_solicitacao_api BIGINT NOT NULL,' +
-      ' id_empresa INT NOT NULL,' +
-      ' pessoa_id_api BIGINT NULL,' +
-      ' nome VARCHAR(180) NULL,' +
-      ' cpf VARCHAR(20) NULL,' +
-      ' matricula VARCHAR(30) NULL,' +
-      ' email_novo VARCHAR(180) NULL,' +
-      ' telefone_novo VARCHAR(20) NULL,' +
-      ' whatsapp_novo VARCHAR(20) NULL,' +
-      ' situacao VARCHAR(20) NOT NULL DEFAULT ''PENDENTE'',' +
-      ' criado_em_api DATETIME NULL,' +
-      ' recebido_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
-      ' processado_em DATETIME NULL,' +
-      ' erro VARCHAR(500) NULL,' +
-      ' PRIMARY KEY (id_solicitacao_api, id_empresa),' +
-      ' KEY idx_integracao_atualizacao_situacao (id_empresa, situacao)' +
-      ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
-    Qry.ExecSQL;
-  finally
-    Qry.Free;
-  end;
-end;
-
 class function TAtualizacaoCadastralIntegracaoService.Sincronizar(
   AConn: TUniConnection; out AErro: string): Boolean;
 var
@@ -67,8 +34,6 @@ begin
   AErro := '';
 
   try
-    GarantirTabela(AConn);
-
     Qry := TUniQuery.Create(nil);
     try
       Qry.Connection := AConn;
