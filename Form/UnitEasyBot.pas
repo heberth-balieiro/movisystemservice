@@ -102,8 +102,8 @@ Const
 begin
   try
     QryLog.SQL.Text   := QryStr;
-    QryLog.ParamByName('data').AsDate           := Date;   // só data
-    QryLog.ParamByName('hora').AsTime           := Time;   // só hora
+    QryLog.ParamByName('data').AsDate           := Date;
+    QryLog.ParamByName('hora').AsTime           := Time;
     QryLog.ParamByName('id_usuario').AsInteger  := id;
     QryLog.ParamByName('descricao').AsString    := msg;
     QryLog.ParamByName('para').AsString         := para;
@@ -127,7 +127,7 @@ const
 begin
   try
     QryLog.SQL.Text := QryStr;
-    QryLog.ParamByName('DataLimite').AsDate := Date - 2; // mantém só os últimos 2 dias
+    QryLog.ParamByName('DataLimite').AsDate := Date - 2;
     QryLog.ExecSQL;
   except
     on E: Exception do
@@ -137,10 +137,11 @@ end;
 
 procedure TEasybotservice.ExcluirLogsAoIniciar;
 const
-  ArquivosLog: array[0..2] of string = (
+  ArquivosLog: array[0..3] of string = (
     'LogMensagenszap.txt',
     'LogSincronizarAPI.txt',
-    'LogSincronizarAPIEleicao.txt'
+    'LogSincronizarAPIEleicao.txt',
+    'LogRetornoAPIEleicao.txt'
   );
 var
   DiretorioExe: string;
@@ -208,7 +209,6 @@ begin
       FEnvioCarteira                := ini.ReadString('SERVICE','EnvioCarteira','false');
       FEnvioEleicao                 := ini.ReadString('SERVICE','EnvioEleicao','false');
 
-      //100 alumio
       FEnvioMensagem100             := ini.ReadString('SERVICE','EnvioMensagem100','false');
 
     except
@@ -237,9 +237,7 @@ begin
     {$REGION 'Banco'}
 
     LogMessage('EasyBot: entrando no ServiceStart.', EVENTLOG_INFORMATION_TYPE);
-    //Limpar Logs
     ExcluirLogsAoIniciar;
-    //carregar Configuracao
     ConfBancoDados(Conn);
     Log('02 - Configurações carregadas.', 'LogBanco');
 
@@ -249,7 +247,6 @@ begin
 
     {$ENDREGION}
 
-    //Codigo ativado pra enviar mensagem
     {$REGION 'WhatsApp'}
 
     if SameText(Trim(FEnvioMensagem), 'true') then
@@ -263,22 +260,16 @@ begin
       );
 
       Log('05 - Criando serviço do WhatsApp.', 'LogMensagenszap');
-
       FWhatsAppService := TWhatsAppMensagemService.Create(WhatsAppConfig);
-
       Log('06 - Iniciando worker do WhatsApp.', 'LogMensagenszap');
-
       FWhatsAppService.Start;
-
       Log('07 - Worker do WhatsApp iniciado.', 'LogMensagenszap');
     end
     else
-      Log('EnvioMensagem está desativado no Config.ini: ' +
-        FEnvioMensagem, 'LogMensagenszap');
+      Log('EnvioMensagem está desativado no Config.ini: ' + FEnvioMensagem, 'LogMensagenszap');
 
     {$ENDREGION}
 
-    //Codigo ativado para sincronizar dados carteira
     {$REGION 'Carteira'}
 
     if SameText(Trim(FEnvioCarteira), 'true') then
@@ -295,12 +286,10 @@ begin
 
     {$ENDREGION}
 
-    //Codigo ativado para sincronizar dados da eleicao para api
     {$REGION 'Eleicao'}
 
     if SameText(Trim(FEnvioEleicao), 'true') then
     begin
-      //Envio
       {$REGION 'Envio'}
         Log('Criando configuração da eleição.', 'LogSincronizarAPIEleicao');
         EleicaoConfig     := TEleicaoSincronizacaoConfig.Criar(Conn,TimerEleicao.Interval);
@@ -311,7 +300,6 @@ begin
         Log('Worker da eleição iniciado.', 'LogSincronizarAPIEleicao');
       {$ENDREGION}
 
-      //Retorno da API
       {$REGION 'Retorno'}
         Log('Criando configuração do retorno da eleição.','LogSincronizarAPIEleicao');
         EleicaoRetornoConfig :=TEleicaoRetornoConfig.Criar(Conn,TimerEleicao.Interval);
@@ -326,7 +314,6 @@ begin
 
     {$ENDREGION}
 
-    //codigo ativado para 100 aluminio FEnvioMensagem100
     {$REGION 'Zap 100%'}
 
     if SameText(Trim(FEnvioMensagem100), 'true') then
@@ -343,8 +330,7 @@ begin
       Log('Worker do WhatsApp iniciado.', 'LogMensagenszap');
     end
     else
-      Log('EnvioMensagem está desativado no Config.ini: ' +
-        FEnvioMensagem, 'LogMensagenszap');
+      Log('EnvioMensagem está desativado no Config.ini: ' + FEnvioMensagem, 'LogMensagenszap');
 
     {$ENDREGION}
 
@@ -357,8 +343,7 @@ begin
       Started := False;
 
       LogMessage(
-        'EasyBot: erro no ServiceStart: ' +
-        E.ClassName + ' - ' + E.Message,
+        'EasyBot: erro no ServiceStart: ' + E.ClassName + ' - ' + E.Message,
         EVENTLOG_ERROR_TYPE
       );
 
@@ -368,7 +353,6 @@ begin
           'LogBanco'
         );
       except
-        // Impede que uma falha no arquivo de log esconda o erro original.
       end;
     end;
   end;
