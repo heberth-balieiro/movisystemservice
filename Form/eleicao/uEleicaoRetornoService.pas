@@ -266,48 +266,28 @@ end;
 
 procedure TEleicaoRetornoService.LogArquivo(const AMensagem: string);
 var
-  Arquivo: TextFile;
+  Linha: string;
 begin
   FLogLock.Acquire;
-
   try
     try
-
       if ExtractFilePath(FConfig.CaminhoLog) <> '' then
-        ForceDirectories(
-          ExtractFilePath(FConfig.CaminhoLog)
-        );
+        ForceDirectories(ExtractFilePath(FConfig.CaminhoLog));
 
-      AssignFile(
-        Arquivo,
-        FConfig.CaminhoLog
+      Linha :=
+        FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) +
+        ' - ' + AMensagem + sLineBreak;
+
+      // Grava explicitamente em UTF-8 para preservar acentos nas mensagens
+      // do serviço e nas exceções retornadas pelo Windows/RESTRequest4D.
+      TFile.AppendAllText(
+        FConfig.CaminhoLog,
+        Linha,
+        TEncoding.UTF8
       );
-
-      if FileExists(FConfig.CaminhoLog) then
-        Append(Arquivo)
-      else
-        Rewrite(Arquivo);
-
-      try
-
-        Writeln(
-          Arquivo,
-          FormatDateTime(
-            'yyyy-mm-dd hh:nn:ss',
-            Now
-          ) +
-          ' - ' +
-          AMensagem
-        );
-
-      finally
-        CloseFile(Arquivo);
-      end;
-
     except
       // não deixa erro de log derrubar o worker
     end;
-
   finally
     FLogLock.Release;
   end;
