@@ -246,9 +246,6 @@ begin
 
     LogArquivo('Retorno da eleição concluído.');
 
-    // Aproveita o mesmo worker de retorno para buscar solicitações públicas
-    // de atualização cadastral. Nesta fase o EasyBot apenas grava uma cópia
-    // local PENDENTE; nenhum cadastro de associado é alterado aqui.
     Erro := '';
     if not TAtualizacaoCadastralIntegracaoService.Sincronizar(Conn, Erro) then
     begin
@@ -278,13 +275,20 @@ begin
         FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) +
         ' - ' + AMensagem + sLineBreak;
 
-      // Grava explicitamente em UTF-8 para preservar acentos nas mensagens
-      // do serviço e nas exceções retornadas pelo Windows/RESTRequest4D.
-      TFile.AppendAllText(
-        FConfig.CaminhoLog,
-        Linha,
-        TEncoding.UTF8
-      );
+      // Na primeira gravação usa WriteAllText para incluir o BOM UTF-8.
+      // Isso ajuda editores do Windows a reconhecerem a codificação correta.
+      if not TFile.Exists(FConfig.CaminhoLog) then
+        TFile.WriteAllText(
+          FConfig.CaminhoLog,
+          Linha,
+          TEncoding.UTF8
+        )
+      else
+        TFile.AppendAllText(
+          FConfig.CaminhoLog,
+          Linha,
+          TEncoding.UTF8
+        );
     except
       // não deixa erro de log derrubar o worker
     end;
