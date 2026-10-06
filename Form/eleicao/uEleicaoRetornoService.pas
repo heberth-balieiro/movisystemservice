@@ -60,6 +60,39 @@ type
     constructor Create(AOwner: TEleicaoRetornoService);
   end;
 
+function NormalizarTextoLog(const ATexto: string): string;
+begin
+  Result := ATexto;
+
+  // Corrige mojibake UTF-8 -> ANSI antes de gravar o arquivo.
+  // Os pares sao montados por codigo Unicode para nao depender
+  // da codificacao usada pelo compilador ao ler este fonte.
+  Result := StringReplace(Result, #$00C3#$00A1, #$00E1, [rfReplaceAll]); // a agudo
+  Result := StringReplace(Result, #$00C3#$00A0, #$00E0, [rfReplaceAll]); // a grave
+  Result := StringReplace(Result, #$00C3#$00A2, #$00E2, [rfReplaceAll]); // a circunflexo
+  Result := StringReplace(Result, #$00C3#$00A3, #$00E3, [rfReplaceAll]); // a til
+  Result := StringReplace(Result, #$00C3#$00A7, #$00E7, [rfReplaceAll]); // c cedilha
+  Result := StringReplace(Result, #$00C3#$00A9, #$00E9, [rfReplaceAll]); // e agudo
+  Result := StringReplace(Result, #$00C3#$00AA, #$00EA, [rfReplaceAll]); // e circunflexo
+  Result := StringReplace(Result, #$00C3#$00AD, #$00ED, [rfReplaceAll]); // i agudo
+  Result := StringReplace(Result, #$00C3#$00B3, #$00F3, [rfReplaceAll]); // o agudo
+  Result := StringReplace(Result, #$00C3#$00B4, #$00F4, [rfReplaceAll]); // o circunflexo
+  Result := StringReplace(Result, #$00C3#$00B5, #$00F5, [rfReplaceAll]); // o til
+  Result := StringReplace(Result, #$00C3#$00BA, #$00FA, [rfReplaceAll]); // u agudo
+
+  Result := StringReplace(Result, #$00C3#$0081, #$00C1, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$0082, #$00C2, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$0083, #$00C3, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$0087, #$00C7, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$0089, #$00C9, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$008A, #$00CA, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$008D, #$00CD, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$0093, #$00D3, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$0094, #$00D4, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$0095, #$00D5, [rfReplaceAll]);
+  Result := StringReplace(Result, #$00C3#$009A, #$00DA, [rfReplaceAll]);
+end;
+
 { TEleicaoRetornoConfig }
 
 class function TEleicaoRetornoConfig.Criar(
@@ -273,10 +306,8 @@ begin
 
       Linha :=
         FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) +
-        ' - ' + AMensagem + sLineBreak;
+        ' - ' + NormalizarTextoLog(AMensagem) + sLineBreak;
 
-      // Na primeira gravação usa WriteAllText para incluir o BOM UTF-8.
-      // Isso ajuda editores do Windows a reconhecerem a codificação correta.
       if not TFile.Exists(FConfig.CaminhoLog) then
         TFile.WriteAllText(
           FConfig.CaminhoLog,
@@ -290,7 +321,7 @@ begin
           TEncoding.UTF8
         );
     except
-      // não deixa erro de log derrubar o worker
+      // nao deixa erro de log derrubar o worker
     end;
   finally
     FLogLock.Release;
