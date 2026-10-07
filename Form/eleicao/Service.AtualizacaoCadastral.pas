@@ -127,7 +127,9 @@ class procedure TAtualizacaoCadastralIntegracaoService.GravarSolicitacao(
 var
   Qry: TUniQuery;
   IdSolicitacao, PessoaIdAPI: Int64;
-  Nome, CPF, Matricula, EmailNovo, TelefoneNovo, WhatsappNovo, CriadoEm: string;
+  Nome, CPF, Matricula, EmailNovo, TelefoneNovo, WhatsappNovo: string;
+  CepNovo, EnderecoNovo, NumeroNovo, BairroNovo, ComplementoNovo, CidadeNova: string;
+  CriadoEm: string;
 begin
   IdSolicitacao := 0;
   PessoaIdAPI := 0;
@@ -147,6 +149,12 @@ begin
   EmailNovo := '';
   TelefoneNovo := '';
   WhatsappNovo := '';
+  CepNovo := '';
+  EnderecoNovo := '';
+  NumeroNovo := '';
+  BairroNovo := '';
+  ComplementoNovo := '';
+  CidadeNova := '';
   CriadoEm := '';
 
   if Assigned(AItem.GetValue('nome')) then Nome := AItem.GetValue<string>('nome');
@@ -155,6 +163,12 @@ begin
   if Assigned(AItem.GetValue('email_novo')) then EmailNovo := AItem.GetValue<string>('email_novo');
   if Assigned(AItem.GetValue('telefone_novo')) then TelefoneNovo := AItem.GetValue<string>('telefone_novo');
   if Assigned(AItem.GetValue('whatsapp_novo')) then WhatsappNovo := AItem.GetValue<string>('whatsapp_novo');
+  if Assigned(AItem.GetValue('cep_novo')) then CepNovo := AItem.GetValue<string>('cep_novo');
+  if Assigned(AItem.GetValue('endereco_novo')) then EnderecoNovo := AItem.GetValue<string>('endereco_novo');
+  if Assigned(AItem.GetValue('numero_novo')) then NumeroNovo := AItem.GetValue<string>('numero_novo');
+  if Assigned(AItem.GetValue('bairro_novo')) then BairroNovo := AItem.GetValue<string>('bairro_novo');
+  if Assigned(AItem.GetValue('complemento_novo')) then ComplementoNovo := AItem.GetValue<string>('complemento_novo');
+  if Assigned(AItem.GetValue('cidade_nova')) then CidadeNova := AItem.GetValue<string>('cidade_nova');
   if Assigned(AItem.GetValue('criado_em')) then CriadoEm := AItem.GetValue<string>('criado_em');
 
   Qry := TUniQuery.Create(nil);
@@ -163,13 +177,18 @@ begin
     Qry.SQL.Text :=
       'INSERT INTO integracao_atualizacao_cadastral (' +
       ' id_solicitacao_api, id_empresa, pessoa_id_api, nome, cpf, matricula, ' +
-      ' email_novo, telefone_novo, whatsapp_novo, situacao, criado_em_api, recebido_em) ' +
+      ' email_novo, telefone_novo, whatsapp_novo, cep_novo, endereco_novo, numero_novo, ' +
+      ' bairro_novo, complemento_novo, cidade_nova, situacao, criado_em_api, recebido_em) ' +
       'VALUES (:id, :empresa, :pessoa, :nome, :cpf, :matricula, :email, :telefone, :whatsapp, ' +
+      ' :cep, :endereco, :numero, :bairro, :complemento, :cidade, ' +
       ' ''PENDENTE'', STR_TO_DATE(:criado_em, ''%Y-%m-%d %H:%i:%s''), NOW()) ' +
       'ON DUPLICATE KEY UPDATE ' +
       ' pessoa_id_api=VALUES(pessoa_id_api), nome=VALUES(nome), cpf=VALUES(cpf), ' +
       ' matricula=VALUES(matricula), email_novo=VALUES(email_novo), ' +
       ' telefone_novo=VALUES(telefone_novo), whatsapp_novo=VALUES(whatsapp_novo), ' +
+      ' cep_novo=VALUES(cep_novo), endereco_novo=VALUES(endereco_novo), ' +
+      ' numero_novo=VALUES(numero_novo), bairro_novo=VALUES(bairro_novo), ' +
+      ' complemento_novo=VALUES(complemento_novo), cidade_nova=VALUES(cidade_nova), ' +
       ' criado_em_api=VALUES(criado_em_api), recebido_em=NOW()';
 
     Qry.ParamByName('id').AsLargeInt := IdSolicitacao;
@@ -181,6 +200,12 @@ begin
     Qry.ParamByName('email').AsString := EmailNovo;
     Qry.ParamByName('telefone').AsString := TelefoneNovo;
     Qry.ParamByName('whatsapp').AsString := WhatsappNovo;
+    Qry.ParamByName('cep').AsString := CepNovo;
+    Qry.ParamByName('endereco').AsString := EnderecoNovo;
+    Qry.ParamByName('numero').AsString := NumeroNovo;
+    Qry.ParamByName('bairro').AsString := BairroNovo;
+    Qry.ParamByName('complemento').AsString := ComplementoNovo;
+    Qry.ParamByName('cidade').AsString := CidadeNova;
     Qry.ParamByName('criado_em').AsString := CriadoEm;
     Qry.ExecSQL;
   finally
