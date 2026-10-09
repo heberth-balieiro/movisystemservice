@@ -19,6 +19,9 @@ type
       const AIDEmpresa: Integer; const AResposta: string); static;
     class procedure GravarSolicitacao(AConn: TUniConnection;
       const AIDEmpresa: Integer; AItem: TJSONObject); static;
+    class procedure EnviarRetornos(AConn: TUniConnection;
+      const AIDEmpresa: Integer; const AUUID, AAPIKey: string;
+      const AConfig: TEleicaoAPIConfig); static;
   public
     class function Sincronizar(AConn: TUniConnection; out AErro: string): Boolean; static;
   end;
@@ -96,6 +99,107 @@ begin
     raise Exception.Create(Erro);
 
   ProcessarResposta(AConn, AIDEmpresa, Resposta);
+  EnviarRetornos(AConn, AIDEmpresa, AUUID, AAPIKey, Config);
+end;
+
+class procedure TAtualizacaoCadastralIntegracaoService.EnviarRetornos(
+  AConn: TUniConnection; const AIDEmpresa: Integer;
+  const AUUID, AAPIKey: string; const AConfig: TEleicaoAPIConfig);
+var
+  Qry, QryAtualiza: TUniQuery;
+  Json: TJSONObject;
+  IdSolicitacao: Int64;
+  Situacao, Observacao, Resposta, Erro, PrimeiroErro: string;
+begin
+  PrimeiroErro := '';
+
+  Qry := TUniQuery.Create(nil);
+  QryAtualiza := TUniQuery.Create(nil);
+  try
+    Qry.Connection := AConn;
+    QryAtualiza.Connection := AConn;
+
+    Qry.SQL.Text :=
+      'SELECT id_solicitacao_api, situacao, erro ' +
+      'FROM integracao_atualizacao_cadastral ' +
+      'WHERE id_empresa = :id_empresa ' +
+      '  AND situacao IN (''PROCESSADO'', ''REJEITADO'', ''ERRO'') ' +
+      '  AND retornado_api_em IS NULL ' +
+      'ORDER BY id_solicitacao_api';
+    Qry.ParamByName('id_empresa').AsInteger := AIDEmpresa;
+    Qry.Open;
+
+    while not Qry.Eof do
+    begin
+      IdSolicitacao := Qry.FieldByName('id_solicitacao_api').AsLargeInt;
+      Situacao := UpperCase(Trim(Qry.FieldByName('situacao').AsString));
+      Observacao := Trim(Qry.FieldByName('erro').AsString);
+      Resposta := '';
+      Erro := '';
+
+      Json := TJSONObject.Create;
+      try
+        Json.AddPair('id_solicitacao', TJSONNumber.Create(IdSolicitacao));
+        Json.AddPair('situacao', Situacao);
+        Json.AddPair('observacao', Observacao);
+
+        if TEleicaoAPIClient.PostEmpresa(
+          AConfig,
+          AUUID,
+          AAPIKey,
+          '/v1/integracao/easyone/atualizacoes-cadastrais/status',
+          Json.ToJSON,
+          Resposta,
+          Erro
+        ) then
+        begin
+          QryAtualiza.Close;
+          QryAtualiza.SQL.Text :=
+            'UPDATE integracao_atualizacao_cadastral ' +
+            'SET retornado_api_em = NOW(), retorno_api_erro = NULL ' +
+            'WHERE id_solicitacao_api = :id_solicitacao_api ' +
+            '  AND id_empresa = :id_empresa ' +
+            '  AND retornado_api_em IS NULL';
+          QryAtualiza.ParamByName('id_solicitacao_api').AsLargeInt := IdSolicitacao;
+          QryAtualiza.ParamByName('id_empresa').AsInteger := AIDEmpresa;
+          QryAtualiza.ExecSQL;
+        end
+        else
+        begin
+          if Trim(Erro) = '' then
+            Erro := 'Falha ao retornar situação da atualização cadastral para a API.';
+
+          QryAtualiza.Close;
+          QryAtualiza.SQL.Text :=
+            'UPDATE integracao_atualizacao_cadastral ' +
+            'SET retorno_api_erro = :erro ' +
+            'WHERE id_solicitacao_api = :id_solicitacao_api ' +
+            '  AND id_empresa = :id_empresa ' +
+            '  AND retornado_api_em IS NULL';
+          QryAtualiza.ParamByName('erro').AsString := Copy(Erro, 1, 500);
+          QryAtualiza.ParamByName('id_solicitacao_api').AsLargeInt := IdSolicitacao;
+          QryAtualiza.ParamByName('id_empresa').AsInteger := AIDEmpresa;
+          QryAtualiza.ExecSQL;
+
+          if PrimeiroErro = '' then
+            PrimeiroErro := Format(
+              'Solicitação %d: %s',
+              [IdSolicitacao, Erro]
+            );
+        end;
+      finally
+        Json.Free;
+      end;
+
+      Qry.Next;
+    end;
+  finally
+    QryAtualiza.Free;
+    Qry.Free;
+  end;
+
+  if PrimeiroErro <> '' then
+    raise Exception.Create(PrimeiroErro);
 end;
 
 class procedure TAtualizacaoCadastralIntegracaoService.ProcessarResposta(
