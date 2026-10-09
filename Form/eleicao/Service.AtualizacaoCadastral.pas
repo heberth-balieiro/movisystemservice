@@ -79,27 +79,53 @@ var
   URL, Usuario, Senha: string;
   Config: TEleicaoAPIConfig;
   Resposta, Erro: string;
+  ErroConsulta, ErroRetorno: string;
 begin
   if not TDaoConfig.BuscarURLAppEleicao(AConn, URL, Usuario, Senha) then
     raise Exception.Create('Configuração da API da eleição não encontrada.');
 
   Config := TEleicaoAPIConfig.Criar(URL, Usuario, Senha);
+  ErroConsulta := '';
+  ErroRetorno := '';
+
   Resposta := '';
   Erro := '';
+  try
+    if TEleicaoAPIClient.GetEmpresa(
+      Config,
+      AUUID,
+      AAPIKey,
+      '/v1/integracao/easyone/atualizacoes-cadastrais/pendentes',
+      '',
+      Resposta,
+      Erro
+    ) then
+      ProcessarResposta(AConn, AIDEmpresa, Resposta)
+    else
+      ErroConsulta := Erro;
+  except
+    on E: Exception do
+      ErroConsulta := E.Message;
+  end;
 
-  if not TEleicaoAPIClient.GetEmpresa(
-    Config,
-    AUUID,
-    AAPIKey,
-    '/v1/integracao/easyone/atualizacoes-cadastrais/pendentes',
-    '',
-    Resposta,
-    Erro
-  ) then
-    raise Exception.Create(Erro);
+  try
+    EnviarRetornos(AConn, AIDEmpresa, AUUID, AAPIKey, Config);
+  except
+    on E: Exception do
+      ErroRetorno := E.Message;
+  end;
 
-  ProcessarResposta(AConn, AIDEmpresa, Resposta);
-  EnviarRetornos(AConn, AIDEmpresa, AUUID, AAPIKey, Config);
+  if (Trim(ErroConsulta) <> '') and (Trim(ErroRetorno) <> '') then
+    raise Exception.Create(
+      'Consulta de pendencias: ' + ErroConsulta +
+      ' | Retorno de status: ' + ErroRetorno
+    );
+
+  if Trim(ErroConsulta) <> '' then
+    raise Exception.Create('Consulta de pendencias: ' + ErroConsulta);
+
+  if Trim(ErroRetorno) <> '' then
+    raise Exception.Create('Retorno de status: ' + ErroRetorno);
 end;
 
 class procedure TAtualizacaoCadastralIntegracaoService.EnviarRetornos(
