@@ -52,6 +52,11 @@ type
       const AIDEmpresa, AIDEleicao: Integer;
       AChapas: TJSONArray); static;
 
+    class procedure GravarQuestoesResultado(
+      AConn: TUniConnection;
+      const AIDEmpresa, AIDEleicao: Integer;
+      AQuestoes: TJSONArray); static;
+
   public
     class function Sincronizar(
       AConn: TUniConnection;
@@ -282,7 +287,6 @@ begin
       '  AND r.id_eleicao=e.id_eleicao ' +
       'WHERE e.id_empresa=:id_empresa ' +
       '  AND UPPER(TRIM(COALESCE(e.situacao,''''))) IN (''APURADA'',''PUBLICADA'') ' +
-      '  AND UPPER(TRIM(COALESCE(e.operacao,'''')))<>''ASSEMBLEIA'' ' +
       '  AND (r.id_resultado IS NULL OR UPPER(TRIM(COALESCE(r.situacao,'''')))<>UPPER(TRIM(COALESCE(e.situacao,'''')))) ' +
       'ORDER BY e.id_eleicao';
 
@@ -337,7 +341,7 @@ class procedure TEleicaoRetornoService.ProcessarResultado(
 var
   Json: TJSONObject;
   Dados: TJSONObject;
-  Chapas: TJSONArray;
+  Chapas, Questoes: TJSONArray;
   IDEleicaoRetorno: Integer;
 begin
   Json := TJSONObject.ParseJSONValue(AResposta) as TJSONObject;
@@ -357,11 +361,13 @@ begin
       raise Exception.Create('ID da eleicao retornado pela API e diferente do solicitado.');
 
     Chapas := Dados.GetValue<TJSONArray>('chapas');
+    Questoes := Dados.GetValue<TJSONArray>('questoes');
 
     AConn.StartTransaction;
     try
       GravarResumoResultado(AConn,AIDEmpresa,AIDEleicao,Dados);
       GravarChapasResultado(AConn,AIDEmpresa,AIDEleicao,Chapas);
+      GravarQuestoesResultado(AConn,AIDEmpresa,AIDEleicao,Questoes);
       AConn.Commit;
     except
       if AConn.InTransaction then
@@ -537,6 +543,112 @@ begin
       Qry.ParamByName('quantidade_votos').AsInteger := QuantidadeVotos;
       Qry.ParamByName('percentual').AsFloat := Percentual;
       Qry.ExecSQL;
+    end;
+  finally
+    Qry.Free;
+  end;
+end;
+
+class procedure TEleicaoRetornoService.GravarQuestoesResultado(
+  AConn: TUniConnection;
+  const AIDEmpresa, AIDEleicao: Integer;
+  AQuestoes: TJSONArray
+);
+var
+  Qry: TUniQuery;
+  Questao, Opcao: TJSONObject;
+  Opcoes: TJSONArray;
+  I, J: Integer;
+  IDQuestao, OrdemQuestao, TotalVotos: Integer;
+  IDOpcao, OrdemOpcao, QuantidadeVotos: Integer;
+  Titulo, Descricao: string;
+  Percentual: Double;
+begin
+  Qry := TUniQuery.Create(nil);
+  try
+    Qry.Connection := AConn;
+
+    Qry.SQL.Text :=
+      'DELETE FROM eleicao_resultado_questao_opcao ' +
+      'WHERE id_empresa=:id_empresa AND id_eleicao=:id_eleicao';
+    Qry.ParamByName('id_empresa').AsInteger := AIDEmpresa;
+    Qry.ParamByName('id_eleicao').AsInteger := AIDEleicao;
+    Qry.ExecSQL;
+
+    Qry.Close;
+    Qry.SQL.Text :=
+      'DELETE FROM eleicao_resultado_questao ' +
+      'WHERE id_empresa=:id_empresa AND id_eleicao=:id_eleicao';
+    Qry.ParamByName('id_empresa').AsInteger := AIDEmpresa;
+    Qry.ParamByName('id_eleicao').AsInteger := AIDEleicao;
+    Qry.ExecSQL;
+
+    if not Assigned(AQuestoes) then
+      Exit;
+
+    for I := 0 to AQuestoes.Count - 1 do
+    begin
+      if not (AQuestoes.Items[I] is TJSONObject) then
+        Continue;
+
+      Questao := AQuestoes.Items[I] as TJSONObject;
+      IDQuestao := Questao.GetValue<Integer>('id_questao_int',0);
+      OrdemQuestao := Questao.GetValue<Integer>('ordem',0);
+      Titulo := Questao.GetValue<string>('titulo','');
+      TotalVotos := Questao.GetValue<Integer>('total_votos',0);
+
+      if IDQuestao <= 0 then
+        raise Exception.Create('ID da questao retornado pela API e invalido.');
+
+      Qry.Close;
+      Qry.SQL.Text :=
+        'INSERT INTO eleicao_resultado_questao (' +
+        ' id_empresa,id_eleicao,id_questao,ordem,titulo,total_votos,recebido_em) ' +
+        'VALUES (' +
+        ' :id_empresa,:id_eleicao,:id_questao,:ordem,:titulo,:total_votos,NOW())';
+      Qry.ParamByName('id_empresa').AsInteger := AIDEmpresa;
+      Qry.ParamByName('id_eleicao').AsInteger := AIDEleicao;
+      Qry.ParamByName('id_questao').AsInteger := IDQuestao;
+      Qry.ParamByName('ordem').AsInteger := OrdemQuestao;
+      Qry.ParamByName('titulo').AsString := Titulo;
+      Qry.ParamByName('total_votos').AsInteger := TotalVotos;
+      Qry.ExecSQL;
+
+      Opcoes := Questao.GetValue<TJSONArray>('opcoes');
+      if not Assigned(Opcoes) then
+        Continue;
+
+      for J := 0 to Opcoes.Count - 1 do
+      begin
+        if not (Opcoes.Items[J] is TJSONObject) then
+          Continue;
+
+        Opcao := Opcoes.Items[J] as TJSONObject;
+        IDOpcao := Opcao.GetValue<Integer>('id_opcao_int',0);
+        OrdemOpcao := Opcao.GetValue<Integer>('ordem',0);
+        Descricao := Opcao.GetValue<string>('descricao','');
+        QuantidadeVotos := Opcao.GetValue<Integer>('quantidade_votos',0);
+        Percentual := Opcao.GetValue<Double>('percentual',0);
+
+        if IDOpcao <= 0 then
+          raise Exception.Create('ID da opcao retornado pela API e invalido.');
+
+        Qry.Close;
+        Qry.SQL.Text :=
+          'INSERT INTO eleicao_resultado_questao_opcao (' +
+          ' id_empresa,id_eleicao,id_questao,id_opcao,ordem,descricao,quantidade_votos,percentual,recebido_em) ' +
+          'VALUES (' +
+          ' :id_empresa,:id_eleicao,:id_questao,:id_opcao,:ordem,:descricao,:quantidade_votos,:percentual,NOW())';
+        Qry.ParamByName('id_empresa').AsInteger := AIDEmpresa;
+        Qry.ParamByName('id_eleicao').AsInteger := AIDEleicao;
+        Qry.ParamByName('id_questao').AsInteger := IDQuestao;
+        Qry.ParamByName('id_opcao').AsInteger := IDOpcao;
+        Qry.ParamByName('ordem').AsInteger := OrdemOpcao;
+        Qry.ParamByName('descricao').AsString := Descricao;
+        Qry.ParamByName('quantidade_votos').AsInteger := QuantidadeVotos;
+        Qry.ParamByName('percentual').AsFloat := Percentual;
+        Qry.ExecSQL;
+      end;
     end;
   finally
     Qry.Free;
