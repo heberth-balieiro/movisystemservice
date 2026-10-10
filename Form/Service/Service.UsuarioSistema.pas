@@ -1,4 +1,4 @@
-unit Service.UsuarioSistema;
+﻿unit Service.UsuarioSistema;
 
 interface
 
@@ -28,7 +28,8 @@ uses
   Dao.UsuarioSistema,
   Dao.Config,
   uEleicaoAPIConfig,
-  uEleicaoAPIClient;
+  uEleicaoAPIClient,
+  System.IOUtils;
 
 class function TUsuarioSistemaService.CriarJSON(const ADTO: TObject): string;
 var
@@ -179,12 +180,20 @@ var
   JSONResp, Dados:TJSONObject;
   JSONValue:TJSONValue;
   IDUsuarioAPI:Integer;
+  CaminhoLog: string;
 begin
   Result  := False;
   AErro   := '';
 
+  //Temporario
+  CaminhoLog := TPath.Combine(
+    ExtractFilePath(ParamStr(0)),
+    'LogDebugUsuarioApto.txt'
+  );
+
+
   try
-    DTO := TDaoUsuarioSistema.BuscarParaSincronizacaoAPTOS(AConn,AIDRegistro);
+    DTO   := TDaoUsuarioSistema.BuscarParaSincronizacaoAPTOS(AConn,AIDRegistro);
     if not Assigned(DTO) then
     Exit(True);
 
@@ -229,9 +238,32 @@ begin
 
       JSON  := CriarJSONAPTOS(DTO);
 
+      //Log  10/10
+
+      TFile.AppendAllText(
+        CaminhoLog,
+        FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) +
+        ' - ANTES DO POST' + sLineBreak +
+        'ID Eleitor: ' + DTO.IdEleitor.ToString + sLineBreak +
+        'JSON: ' + JSON + sLineBreak +
+        '----------------------------------------' + sLineBreak,
+        TEncoding.UTF8
+      );
+
       if not TEleicaoAPIClient.PostEmpresa(Config, DTO.GuidEmpresa, DTO.APIKey,
         '/v1/integracao/usuario/associado', JSON, Resposta, AErro) then
         Exit;
+
+      //log depois 10/10
+      TFile.AppendAllText(
+      CaminhoLog,
+      FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) +
+      ' - DEPOIS DO POST - SUCESSO' + sLineBreak +
+      'ID Eleitor: ' + DTO.IdEleitor.ToString + sLineBreak +
+      'Resposta: ' + Resposta + sLineBreak +
+      '----------------------------------------' + sLineBreak,
+      TEncoding.UTF8
+    );
 
       //capturar resposta da API
       JSONValue:=TJSONObject.ParseJSONValue(Resposta);
