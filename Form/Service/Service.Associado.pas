@@ -88,7 +88,7 @@ begin
     begin
       if AForcar then
       begin
-        AErro := 'Associado não encontrado para sincronização. ID: ' + AIDRegistro.ToString;
+        AErro := 'Associado não encontrado. ID: ' + AIDRegistro.ToString;
         Exit;
       end;
 
@@ -120,7 +120,12 @@ begin
 
       if not TEleicaoAPIClient.PostEmpresa(Config,DTO.GuidEmpresa,DTO.APIKey,'/v1/integracao/associado',JSON,Resposta,AErro) then Exit;
 
-      TDaoAssociado.AtualizarSincronizacao(AConn,AIDRegistro);
+      // No fluxo normal, encerra a pendência da fila de sincronização do sócio.
+      // No fluxo forçado do usuário APTO, o envio é apenas uma dependência do usuário
+      // e não deve depender nem interferir no controle socio.sinc_app.
+      if not AForcar then
+        TDaoAssociado.AtualizarSincronizacao(AConn,AIDRegistro);
+
       Result := True;
     finally
       DTO.Free;
