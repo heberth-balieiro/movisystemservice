@@ -29,6 +29,7 @@ uses
   Dao.Config,
   uEleicaoAPIConfig,
   uEleicaoAPIClient,
+  Service.Associado,
   System.IOUtils;
 
 class function TUsuarioSistemaService.CriarJSON(const ADTO: TObject): string;
@@ -176,6 +177,7 @@ class function TUsuarioSistemaService.SincronizarAptos(AConn: TUniConnection; co
 var
   DTO: TUsuarioAPTOSEnvioDTO;
   URL, UsuarioAPI, SenhaAPI, JSON, Resposta: string;
+  ErroAssociado: string;
   Config: TEleicaoAPIConfig;
   JSONResp, Dados:TJSONObject;
   JSONValue:TJSONValue;
@@ -216,6 +218,12 @@ begin
         Exit;
       end;
 
+      if DTO.idassociado <= 0 then
+      begin
+        AErro := 'ID do associado não informado.';
+        Exit;
+      end;
+
       if not TDaoConfig.BuscarURLAppEleicao(AConn,URL,UsuarioAPI,SenhaAPI) then
       begin
         AErro := 'Configuração da API de eleição não encontrada.';
@@ -233,6 +241,14 @@ begin
       if Trim(DTO.APIKey).IsEmpty then
       begin
         AErro := 'API Key da empresa não informada.';
+        Exit;
+      end;
+
+      // Garante que a pessoa/associado exista na API antes de criar o usuário APTO.
+      // O envio é forçado e não depende do flag socio.sinc_app.
+      if not TAssociadoService.SincronizarAssociadoForcado(AConn,DTO.idassociado,ErroAssociado) then
+      begin
+        AErro := 'Falha ao sincronizar associado antes do usuário APTO: ' + ErroAssociado;
         Exit;
       end;
 
