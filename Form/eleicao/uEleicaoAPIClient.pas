@@ -118,7 +118,8 @@ begin
       .BaseURL(AConfig.URL)
       .Resource(NormalizarRecurso(ARecurso))
       .Accept('application/json')
-      .ContentType('application/json')
+      .FallbackCharsetEncoding('UTF-8')
+      .ContentType('application/json; charset=utf-8')
       .AddHeader(AHeader1,AValor1)
       .AddHeader(AHeader2,AValor2)
       .AddBody(AJson,TRESTContentType.ctAPPLICATION_JSON)
@@ -127,7 +128,7 @@ begin
 
     if not Assigned(Resposta) then
     begin
-      AErro := 'A API de eleiÁ„o n„o retornou uma resposta.';
+      AErro := 'A API de elei√ß√£o n√£o retornou uma resposta.';
       Exit;
     end;
 
@@ -141,7 +142,7 @@ begin
       AErro := ExtrairMensagem(Resposta.Content);
 
       if AErro.IsEmpty then
-        AErro := Format('Erro HTTP %d ao acessar a API de eleiÁ„o.',[Resposta.StatusCode]);
+        AErro := Format('Erro HTTP %d ao acessar a API de elei√ß√£o.',[Resposta.StatusCode]);
 
       Exit;
     end;
@@ -181,14 +182,14 @@ begin
   if Trim(AUUID).IsEmpty then
   begin
     AResposta := '';
-    AErro := 'UUID da empresa n„o informado.';
+    AErro := 'UUID da empresa n√£o informado.';
     Exit(False);
   end;
 
   if Trim(AAPIKey).IsEmpty then
   begin
     AResposta := '';
-    AErro := 'Chave de integraÁ„o da empresa n„o informada.';
+    AErro := 'Chave de integra√ß√£o da empresa n√£o informada.';
     Exit(False);
   end;
 
@@ -203,14 +204,14 @@ begin
   if Trim(AUUID).IsEmpty then
   begin
     AResposta := '';
-    AErro := 'UUID da empresa n„o informado.';
+    AErro := 'UUID da empresa n√£o informado.';
     Exit(False);
   end;
 
   if Trim(AAPIKey).IsEmpty then
   begin
     AResposta := '';
-    AErro := 'Chave de integraÁ„o da empresa n„o informada.';
+    AErro := 'Chave de integra√ß√£o da empresa n√£o informada.';
     Exit(False);
   end;
 
@@ -247,7 +248,7 @@ begin
 
     if not Assigned(Resposta) then
     begin
-      AErro := 'A API de eleiÁ„o n„o retornou uma resposta.';
+      AErro := 'A API de elei√ß√£o n√£o retornou uma resposta.';
       Exit;
     end;
 
@@ -261,7 +262,7 @@ begin
       AErro := ExtrairMensagem(Resposta.Content);
 
       if AErro.IsEmpty then
-        AErro := Format('Erro HTTP %d ao acessar a API de eleiÁ„o.',[Resposta.StatusCode]);
+        AErro := Format('Erro HTTP %d ao acessar a API de elei√ß√£o.',[Resposta.StatusCode]);
 
       Exit;
     end;
