@@ -1,0 +1,28 @@
+-- DESABILITA TEMPORARIAMENTE A VALIDACAO DE FKs
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- LIMPEZA DOS DADOS FUNCIONAIS DA ELEICAO
+TRUNCATE TABLE eleicao_voto;
+TRUNCATE TABLE eleicao_votante;
+TRUNCATE TABLE eleicao_confirmacao;
+TRUNCATE TABLE eleicao_auditoria;
+TRUNCATE TABLE eleicao_rate_limit;
+
+TRUNCATE TABLE eleicao_questao_opcao;
+TRUNCATE TABLE eleicao_questao;
+
+TRUNCATE TABLE eleicao_comissao;
+
+TRUNCATE TABLE eleicao_chapa_membros;
+TRUNCATE TABLE eleicao_chapa;
+
+TRUNCATE TABLE eleicao_configuracao;
+TRUNCATE TABLE eleicao;
+
+-- USUARIOS E PESSOAS VINDOS DO EASYONE
+TRUNCATE TABLE usuario;
+TRUNCATE TABLE pessoa;
+TRUNCATE TABLE empresa;
+
+-- REABILITA AS FKs
+SET FOREIGN_KEY_CHECKS = 1;

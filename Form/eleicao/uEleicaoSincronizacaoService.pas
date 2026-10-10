@@ -1,4 +1,4 @@
-unit uEleicaoSincronizacaoService;
+﻿unit uEleicaoSincronizacaoService;
 
 interface
 
@@ -145,7 +145,7 @@ begin
   FStopEvent.ResetEvent;
   FThread := TEleicaoWorkerThread.Create(Self);
   FThread.Start;
-  LogArquivo('Serviço de sincronizaão da eleição iniciado.');
+  LogArquivo('Serviço de sincronização da eleição iniciado.');
 end;
 
 procedure TEleicaoSincronizacaoService.Stop;
@@ -155,7 +155,7 @@ begin
   FThread.Terminate;
   FThread.WaitFor;
   FreeAndNil(FThread);
-  LogArquivo('Serviço de sincronizaão da eleição finalizado.');
+  LogArquivo('Serviço de sincronização da eleição finalizado.');
 end;
 
 function TEleicaoSincronizacaoService.Executando: Boolean;
