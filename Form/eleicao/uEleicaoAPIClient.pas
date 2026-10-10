@@ -49,7 +49,10 @@ implementation
 
 uses
   System.SysUtils,
+  System.Classes,
   System.JSON,
+  System.Net.HttpClient,
+  System.Net.URLClient,
   RESTRequest4D,
   REST.Types;
 
@@ -107,24 +110,40 @@ class function TEleicaoAPIClient.ExecutarPost(
   const AHeader1, AValor1, AHeader2, AValor2: string;
   out AResposta, AErro: string): Boolean;
 var
-  Resposta: IResponse;
+  Cliente : THTTPClient;
+  Resposta: IHTTPResponse;
+  Corpo   : TStringStream;
+  Headers : TNetHeaders;
+  URL     : string;
 begin
   Result := False;
   AResposta := '';
   AErro := '';
 
+  Cliente := nil;
+  Corpo := nil;
   try
-    Resposta := TRequest.New
-      .BaseURL(AConfig.URL)
-      .Resource(NormalizarRecurso(ARecurso))
-      .Accept('application/json')
-      .FallbackCharsetEncoding('raw')
-      .ContentType('application/json; charset=utf-8')
-      .AddHeader(AHeader1,AValor1)
-      .AddHeader(AHeader2,AValor2)
-      .AddBody(AJson,TRESTContentType.ctAPPLICATION_JSON)
-      .Timeout(AConfig.Timeout)
-      .POST;
+    URL := Trim(AConfig.URL);
+    if not URL.EndsWith('/') then
+      URL := URL + '/';
+    URL := URL + NormalizarRecurso(ARecurso);
+
+    Cliente := THTTPClient.Create;
+    Cliente.ConnectionTimeout := AConfig.Timeout;
+    Cliente.ResponseTimeout := AConfig.Timeout;
+
+    SetLength(Headers,4);
+    Headers[0] := TNameValuePair.Create('Accept','application/json');
+    Headers[1] := TNameValuePair.Create('Content-Type','application/json; charset=utf-8');
+    Headers[2] := TNameValuePair.Create(AHeader1,AValor1);
+    Headers[3] := TNameValuePair.Create(AHeader2,AValor2);
+
+    // Envia os bytes do JSON explicitamente em UTF-8 e lê a resposta também
+    // como UTF-8, sem passar pelo parser de charset do TRESTClient.
+    Corpo := TStringStream.Create(AJson,TEncoding.UTF8);
+    Corpo.Position := 0;
+
+    Resposta := Cliente.Post(URL,Corpo,nil,Headers);
 
     if not Assigned(Resposta) then
     begin
@@ -132,14 +151,14 @@ begin
       Exit;
     end;
 
-    AResposta := Resposta.Content;
+    AResposta := Resposta.ContentAsString(TEncoding.UTF8);
 
     Result := (Resposta.StatusCode >= 200) and
               (Resposta.StatusCode <= 299);
 
     if not Result then
     begin
-      AErro := ExtrairMensagem(Resposta.Content);
+      AErro := ExtrairMensagem(AResposta);
 
       if AErro.IsEmpty then
         AErro := Format('Erro HTTP %d ao acessar a API de eleição.',[Resposta.StatusCode]);
@@ -154,6 +173,9 @@ begin
       AErro := E.ClassName + ': ' + E.Message;
     end;
   end;
+
+  Corpo.Free;
+  Cliente.Free;
 end;
 
 class function TEleicaoAPIClient.PostBootstrap(
