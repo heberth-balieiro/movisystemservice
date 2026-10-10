@@ -120,62 +120,63 @@ begin
   AResposta := '';
   AErro := '';
 
-  Cliente := nil;
-  Corpo := nil;
+  Cliente := THTTPClient.Create;
   try
-    URL := Trim(AConfig.URL);
-    if not URL.EndsWith('/') then
-      URL := URL + '/';
-    URL := URL + NormalizarRecurso(ARecurso);
+    Corpo := nil;
+    try
+      URL := Trim(AConfig.URL);
+      if not URL.EndsWith('/') then
+        URL := URL + '/';
+      URL := URL + NormalizarRecurso(ARecurso);
 
-    Cliente := THTTPClient.Create;
-    Cliente.ConnectionTimeout := AConfig.Timeout;
-    Cliente.ResponseTimeout := AConfig.Timeout;
+      Cliente.ConnectionTimeout := AConfig.Timeout;
+      Cliente.ResponseTimeout := AConfig.Timeout;
 
-    SetLength(Headers,4);
-    Headers[0] := TNameValuePair.Create('Accept','application/json');
-    Headers[1] := TNameValuePair.Create('Content-Type','application/json; charset=utf-8');
-    Headers[2] := TNameValuePair.Create(AHeader1,AValor1);
-    Headers[3] := TNameValuePair.Create(AHeader2,AValor2);
+      SetLength(Headers,4);
+      Headers[0] := TNameValuePair.Create('Accept','application/json');
+      Headers[1] := TNameValuePair.Create('Content-Type','application/json; charset=utf-8');
+      Headers[2] := TNameValuePair.Create(AHeader1,AValor1);
+      Headers[3] := TNameValuePair.Create(AHeader2,AValor2);
 
-    // Envia os bytes do JSON explicitamente em UTF-8 e lê a resposta também
-    // como UTF-8, sem passar pelo parser de charset do TRESTClient.
-    Corpo := TStringStream.Create(AJson,TEncoding.UTF8);
-    Corpo.Position := 0;
+      // Envia os bytes do JSON explicitamente em UTF-8 e lê a resposta também
+      // como UTF-8, sem passar pelo parser de charset do TRESTClient.
+      Corpo := TStringStream.Create(AJson,TEncoding.UTF8);
+      Corpo.Position := 0;
 
-    Resposta := Cliente.Post(URL,Corpo,nil,Headers);
+      Resposta := Cliente.Post(URL,Corpo,nil,Headers);
 
-    if not Assigned(Resposta) then
-    begin
-      AErro := 'A API de eleição não retornou uma resposta.';
-      Exit;
+      if not Assigned(Resposta) then
+      begin
+        AErro := 'A API de eleição não retornou uma resposta.';
+        Exit;
+      end;
+
+      AResposta := Resposta.ContentAsString(TEncoding.UTF8);
+
+      Result := (Resposta.StatusCode >= 200) and
+                (Resposta.StatusCode <= 299);
+
+      if not Result then
+      begin
+        AErro := ExtrairMensagem(AResposta);
+
+        if AErro.IsEmpty then
+          AErro := Format('Erro HTTP %d ao acessar a API de eleição.',[Resposta.StatusCode]);
+
+        Exit;
+      end;
+
+    except
+      on E: Exception do
+      begin
+        Result := False;
+        AErro := E.ClassName + ': ' + E.Message;
+      end;
     end;
-
-    AResposta := Resposta.ContentAsString(TEncoding.UTF8);
-
-    Result := (Resposta.StatusCode >= 200) and
-              (Resposta.StatusCode <= 299);
-
-    if not Result then
-    begin
-      AErro := ExtrairMensagem(AResposta);
-
-      if AErro.IsEmpty then
-        AErro := Format('Erro HTTP %d ao acessar a API de eleição.',[Resposta.StatusCode]);
-
-      Exit;
-    end;
-
-  except
-    on E: Exception do
-    begin
-      Result := False;
-      AErro := E.ClassName + ': ' + E.Message;
-    end;
+  finally
+    Corpo.Free;
+    Cliente.Free;
   end;
-
-  Corpo.Free;
-  Cliente.Free;
 end;
 
 class function TEleicaoAPIClient.PostBootstrap(
