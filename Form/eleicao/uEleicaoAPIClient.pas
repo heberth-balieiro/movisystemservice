@@ -118,7 +118,7 @@ begin
       .BaseURL(AConfig.URL)
       .Resource(NormalizarRecurso(ARecurso))
       .Accept('application/json')
-      .FallbackCharsetEncoding('UTF-8')
+      .FallbackCharsetEncoding('raw')
       .ContentType('application/json; charset=utf-8')
       .AddHeader(AHeader1,AValor1)
       .AddHeader(AHeader2,AValor2)
