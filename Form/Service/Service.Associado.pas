@@ -9,8 +9,10 @@ type
   TAssociadoService = class
   private
     class function CriarJSON(const ADTO: TObject): string; static;
+    class function SincronizarAssociadoInterno(AConn: TUniConnection; const AIDRegistro: Integer; const AForcar: Boolean; out AErro: string): Boolean; static;
   public
     class function SincronizarAssociado(AConn: TUniConnection; const AIDRegistro: Integer; out AErro: string): Boolean; static;
+    class function SincronizarAssociadoForcado(AConn: TUniConnection; const AIDRegistro: Integer; out AErro: string): Boolean; static;
   end;
 
 implementation
@@ -70,7 +72,8 @@ begin
   end;
 end;
 
-class function TAssociadoService.SincronizarAssociado(AConn: TUniConnection; const AIDRegistro: Integer; out AErro: string): Boolean;
+class function TAssociadoService.SincronizarAssociadoInterno(AConn: TUniConnection;
+  const AIDRegistro: Integer; const AForcar: Boolean; out AErro: string): Boolean;
 var
   DTO: TAssociadoEnvioDTO;
   URL, Usuario, Senha, JSON, Resposta: string;
@@ -80,13 +83,22 @@ begin
   AErro := '';
 
   try
-    DTO := TDaoAssociado.BuscarParaSincronizacao(AConn,AIDRegistro);
-    if not Assigned(DTO) then Exit(True);
+    DTO := TDaoAssociado.BuscarParaSincronizacao(AConn,AIDRegistro,AForcar);
+    if not Assigned(DTO) then
+    begin
+      if AForcar then
+      begin
+        AErro := 'Associado n√£o encontrado para sincroniza√ß√£o. ID: ' + AIDRegistro.ToString;
+        Exit;
+      end;
+
+      Exit(True);
+    end;
 
     try
       if not TDaoConfig.BuscarURLAppEleicao(AConn,URL,Usuario,Senha) then
       begin
-        AErro := 'ConfiguraÁ„o da API de eleiÁ„o n„o encontrada.';
+        AErro := 'Configura√ß√£o da API de elei√ß√£o n√£o encontrada.';
         Exit;
       end;
 
@@ -94,13 +106,13 @@ begin
 
       if Trim(DTO.GuidEmpresa).IsEmpty then
       begin
-        AErro := 'UUID da empresa n„o informado.';
+        AErro := 'UUID da empresa n√£o informado.';
         Exit;
       end;
 
       if Trim(DTO.APIKey).IsEmpty then
       begin
-        AErro := 'API Key da empresa n„o informada.';
+        AErro := 'API Key da empresa n√£o informada.';
         Exit;
       end;
 
@@ -120,6 +132,18 @@ begin
       AErro := E.ClassName + ': ' + E.Message;
     end;
   end;
+end;
+
+class function TAssociadoService.SincronizarAssociado(AConn: TUniConnection;
+  const AIDRegistro: Integer; out AErro: string): Boolean;
+begin
+  Result := SincronizarAssociadoInterno(AConn,AIDRegistro,False,AErro);
+end;
+
+class function TAssociadoService.SincronizarAssociadoForcado(AConn: TUniConnection;
+  const AIDRegistro: Integer; out AErro: string): Boolean;
+begin
+  Result := SincronizarAssociadoInterno(AConn,AIDRegistro,True,AErro);
 end;
 
 end.
