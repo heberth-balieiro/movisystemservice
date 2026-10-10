@@ -9,7 +9,7 @@ uses
 type
   TDaoAssociado = class
   public
-    class function BuscarParaSincronizacao(AConn: TUniConnection; const ARegistro: Integer): TAssociadoEnvioDTO; static;
+    class function BuscarParaSincronizacao(AConn: TUniConnection; const ARegistro: Integer; const AForcar: Boolean = False): TAssociadoEnvioDTO; static;
     class procedure AtualizarSincronizacao(AConn: TUniConnection; const ARegistro: Integer); static;
   end;
 
@@ -18,9 +18,14 @@ implementation
 uses
   System.SysUtils;
 
-class function TDaoAssociado.BuscarParaSincronizacao(AConn: TUniConnection; const ARegistro: Integer): TAssociadoEnvioDTO;
-const
-  SQL =
+class function TDaoAssociado.BuscarParaSincronizacao(AConn: TUniConnection; const ARegistro: Integer; const AForcar: Boolean): TAssociadoEnvioDTO;
+var
+  Qry: TUniQuery;
+  SQL: string;
+begin
+  Result := nil;
+
+  SQL :=
     'SELECT s.id_socio,s.codigo,COALESCE(s.matricula,0) matricula,s.socio_deste,s.situacao,s.nome,s.apelido,'+
     's.telefone,s.celular,s.whatsapp,s.cpf,s.nascimento,s.email,s.foto,s.bloqueado,s.excluido,s.rg,s.pai,s.mae,'+
     'c.cidade,ss.razao secretaria,sp.descricao profissao,sl.descricao lotacao,st.descricao localtrabalho,'+
@@ -33,11 +38,12 @@ const
     'LEFT JOIN sindicato_lotacao sl ON sl.id_lotacao=s.id_lotacao '+
     'LEFT JOIN sindicato_local_trabalho st ON st.id_local=s.id_localtrabalho '+
     'LEFT JOIN cidade cc ON cc.id_cidade=s.natural_cidade '+
-    'WHERE s.id_socio= :id_socio AND s.sinc_app=''S'' LIMIT 1';
-var
-  Qry: TUniQuery;
-begin
-  Result := nil;
+    'WHERE s.id_socio= :id_socio ';
+
+  if not AForcar then
+    SQL := SQL + 'AND s.sinc_app=''S'' ';
+
+  SQL := SQL + 'LIMIT 1';
 
   Qry := TUniQuery.Create(nil);
   try
